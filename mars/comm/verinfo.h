@@ -2,10 +2,10 @@
 #ifndef Mars_verinfo_h
 #define Mars_verinfo_h
 
-#define MARS_REVISION "dfebb49"
-#define MARS_PATH "master"
+#define MARS_REVISION "810e303c"
+#define MARS_PATH "feature/fix_platform_comm"
 #define MARS_URL ""
-#define MARS_BUILD_TIME "2017-01-10 21:41:50"
-#define MARS_TAG "samplelibs"
+#define MARS_BUILD_TIME "2019-12-23 14:48:13"
+#define MARS_TAG ""
 
 #endif

@@ -29,7 +29,7 @@
 #include "mars/comm/messagequeue/message_queue.h"
 
 static void onForeground(bool _isforeground) {
-    SINGLETON_STRONG(ActiveLogic)->OnForeground(_isforeground);
+    ActiveLogic::Singleton::Instance()->OnForeground(_isforeground);
 }
 
 static void __initbind_baseprjevent() {
@@ -38,28 +38,28 @@ static void __initbind_baseprjevent() {
 
 BOOT_RUN_STARTUP(__initbind_baseprjevent);
 
-#ifdef ANDROID
 #define INACTIVE_TIMEOUT (10*60*1000) //ms
-#elif defined Q_OS_BLACKBERRY
-#define INACTIVE_TIMEOUT (10*60*1000) //ms
-#elif defined _WIN32
-#define INACTIVE_TIMEOUT (10*60*1000) //ms
-#else
-#define INACTIVE_TIMEOUT (10*60*1000) //ms
-#endif
 
+#ifdef ANDROID
+static void onAlarm(int64_t id) {
+    Alarm::onAlarmImpl(id);
+}
+#endif
 
 ActiveLogic::ActiveLogic()
 : isforeground_(false), isactive_(true)
 , alarm_(boost::bind(&ActiveLogic::__OnInActive, this), false)
 , lastforegroundchangetime_(::gettickcount())
 {
-    xinfo_function();
+    xinfo_function(TSF"MQ:%_", MessageQueue::GetDefMessageQueue());
 #ifndef __APPLE__
         if (!alarm_.Start(INACTIVE_TIMEOUT))
        	{
             xerror2(TSF"m_alarm.Start false");
     	}
+#endif
+#ifdef ANDROID
+    GetSignalOnAlarm().connect(&onAlarm);
 #endif
 }
 
@@ -67,14 +67,14 @@ ActiveLogic::~ActiveLogic()
 {
     xinfo_function();
 	MessageQueue::CancelMessage(MessageQueue::DefAsyncInvokeHandler(MessageQueue::GetDefMessageQueue()), (MessageQueue::MessageTitle_t)this);
-	MessageQueue::WaitForRuningLockEnd(MessageQueue::DefAsyncInvokeHandler(MessageQueue::GetDefMessageQueue()));
+	MessageQueue::WaitForRunningLockEnd(MessageQueue::DefAsyncInvokeHandler(MessageQueue::GetDefMessageQueue()));
 }
 
 void ActiveLogic::OnForeground(bool _isforeground)
 {
 	if (MessageQueue::GetDefMessageQueue()!=MessageQueue::CurrentThreadMessageQueue())
 	{
-        MessageQueue::AsyncInvoke(boost::bind(&ActiveLogic::OnForeground, this, _isforeground), (MessageQueue::MessageTitle_t)this, mq::DefAsyncInvokeHandler(mq::GetDefMessageQueue()));
+        MessageQueue::AsyncInvoke(boost::bind(&ActiveLogic::OnForeground, this, _isforeground), (MessageQueue::MessageTitle_t)this, mq::DefAsyncInvokeHandler(mq::GetDefMessageQueue()), "ActiveLogic::OnForeground");
 		return;
 	}
 
